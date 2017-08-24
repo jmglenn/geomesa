@@ -157,6 +157,7 @@ class NoGapFill(tubeFeatures: SimpleFeatureCollection,
                 maxBins: Int) extends TubeBuilder(tubeFeatures, bufferDistance, maxBins) with LazyLogging {
 
   // Bin ordered features into maxBins that retain order by date then union by geometry
+  @deprecated("Binning is no longer necessary for the query planner.","08-24-2017")
   def timeBinAndUnion(features: Iterable[SimpleFeature], maxBins: Int): Iterator[SimpleFeature] = {
     val numFeatures = features.size
 
@@ -192,7 +193,12 @@ class NoGapFill(tubeFeatures: SimpleFeatureCollection,
     val sortedTube = buffered.toSeq.sortBy { sf => getStartTime(sf).getTime }
 
     logger.debug(s"sorted tube size: ${sortedTube.size}")
-    timeBinAndUnion(sortedTube, maxBins)
+    //timeBinAndUnion(sortedTube, maxBins) //removed due to deprecation of binning
+
+    sortedTube.zipWithIndex.map{case (geom,id) =>
+      builder.reset
+      builder.buildFeature(id.toString, Array(getGeom(geom), getStartTime(geom), getStartTime(geom)))
+    }.iterator
   }
 }
 
@@ -251,7 +257,7 @@ class InterpolatedGapFill(tubeFeatures: SimpleFeatureCollection,
   override def createTube: Iterator[SimpleFeature] = {
     import org.locationtech.geomesa.utils.geotools.Conversions.RichGeometry
 
-    logger.debug("Creating tube with line gap fill")
+    logger.debug("Creating tube with interpolated gap fill")
 
     val transformed = transform(tubeFeatures, dtgField)
     val sortedTube = transformed.toSeq.sortBy { sf => getStartTime(sf).getTime }
@@ -266,7 +272,7 @@ class InterpolatedGapFill(tubeFeatures: SimpleFeatureCollection,
         calc.setDestinationGeographicPoint(p2.getX, p2.getY)
         val dist = calc.getOrthodromicDistance
         //If the distance between points is greater than the buffer distance, segment the line
-        //So that no segment is larger than the buffer. This ensures that each segment has an
+        //So that no segment is larger than the buffer. This ensures that each segment has appropriate
         //times and distance.
         if (dist > bufferDistance) {
           val heading = calc.getAzimuth

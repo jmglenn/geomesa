@@ -81,8 +81,8 @@ class TubeSelectProcessTest extends Specification {
       // result set to tube on
       val features = fs.getFeatures(CQL.toFilter("type <> 'a'"))
 
-      forall(Seq("nofill", "line")) { fill =>
-        forall(Seq((ECQL.toFilter("in('a1')"), true), (Filter.EXCLUDE, false))) { case (filter, next) =>
+      forall(Seq("nofill", "line", "interpolated")) { fill =>
+        forall(Seq((ECQL.toFilter("in('a1')"), true), (Filter.EXCLUDE, false), (Filter.EXCLUDE, false))) { case (filter, next) =>
           // tube features
           val tubeFeatures = fs.getFeatures(filter)
           val ts = new TubeSelectProcess()
@@ -326,7 +326,6 @@ class TubeSelectProcessTest extends Specification {
       val fs = ds.getFeatureSource(sftName)
 
       val featureCollection = new DefaultFeatureCollection(sftName, sft)
-      //TODO: Make data that actually emulated a track, and two alternate tracks, one offset from the other by a small amount of time
       val calc = new GeodeticCalculator()
       //Configure track generation for 1 hour at 10.2 meters per second @ 80 degrees starting at -141.0, 35.0
       var curPoint = WKTUtils.read("POINT(-141.0 35.0)")
